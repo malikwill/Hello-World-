@@ -53,6 +53,15 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
+      opacity: 1;
+      pointer-events: auto;
+      transition: opacity 0.2s ease;
+      z-index: 10;
+    }
+
+    .controls.dimmed {
+      opacity: 0.3;
+      pointer-events: none;
     }
 
     label {
@@ -73,7 +82,7 @@
 <body>
   <h1 id="greeting">Hello world!</h1>
 
-  <div class="controls">
+  <div class="controls" id="controls">
     <label>
       <input type="checkbox" id="colorToggle">
       Turn text blue
@@ -87,6 +96,7 @@
 
   <script>
     const greeting = document.getElementById('greeting');
+    const controls = document.getElementById('controls');
     const colorToggle = document.getElementById('colorToggle');
     const rainbowToggle = document.getElementById('rainbowToggle');
 
@@ -115,7 +125,14 @@
       const rect = greeting.getBoundingClientRect();
       offsetX = x - rect.left;
       offsetY = y - rect.top;
-      greeting.style.transform = 'none'; // stop using the centering transform once dragging starts
+
+      // Set left/top to current visual position BEFORE clearing transform,
+      // so there's no jump when the centering transform is removed
+      greeting.style.left = `${rect.left}px`;
+      greeting.style.top = `${rect.top}px`;
+      greeting.style.transform = 'none';
+
+      controls.classList.add('dimmed');
     }
 
     function moveDrag(x, y) {
@@ -126,6 +143,7 @@
 
     function endDrag() {
       isDragging = false;
+      controls.classList.remove('dimmed');
     }
 
     // Mouse events
