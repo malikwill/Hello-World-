@@ -6,23 +6,29 @@
   <title>Hello World</title>
   <style>
     body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
       margin: 0;
+      min-height: 100vh;
       font-family: sans-serif;
-      text-align: center;
-      padding: 20px;
-      box-sizing: border-box;
+      overflow: hidden;
+      position: relative;
     }
 
     h1 {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       font-size: clamp(2rem, 12vw, 4rem);
       color: black;
       transition: color 0.4s ease;
-      margin-bottom: 30px;
+      margin: 0;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+
+    h1:active {
+      cursor: grabbing;
     }
 
     h1.rainbow {
@@ -40,6 +46,10 @@
     }
 
     .controls {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -81,20 +91,58 @@
     const rainbowToggle = document.getElementById('rainbowToggle');
 
     colorToggle.addEventListener('change', () => {
-      if (rainbowToggle.checked) return; // rainbow takes priority
+      if (rainbowToggle.checked) return;
       greeting.style.color = colorToggle.checked ? 'blue' : 'black';
     });
 
     rainbowToggle.addEventListener('change', () => {
       if (rainbowToggle.checked) {
         greeting.classList.add('rainbow');
-        greeting.style.color = ''; // let the gradient take over
+        greeting.style.color = '';
       } else {
         greeting.classList.remove('rainbow');
-        // restore whatever the blue toggle says
         greeting.style.color = colorToggle.checked ? 'blue' : 'black';
       }
     });
+
+    // Drag functionality (mouse + touch)
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    function startDrag(x, y) {
+      isDragging = true;
+      const rect = greeting.getBoundingClientRect();
+      offsetX = x - rect.left;
+      offsetY = y - rect.top;
+      greeting.style.transform = 'none'; // stop using the centering transform once dragging starts
+    }
+
+    function moveDrag(x, y) {
+      if (!isDragging) return;
+      greeting.style.left = `${x - offsetX}px`;
+      greeting.style.top = `${y - offsetY}px`;
+    }
+
+    function endDrag() {
+      isDragging = false;
+    }
+
+    // Mouse events
+    greeting.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+    document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+    document.addEventListener('mouseup', endDrag);
+
+    // Touch events
+    greeting.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      startDrag(touch.clientX, touch.clientY);
+    });
+    document.addEventListener('touchmove', (e) => {
+      const touch = e.touches[0];
+      moveDrag(touch.clientX, touch.clientY);
+    });
+    document.addEventListener('touchend', endDrag);
   </script>
 </body>
 </html>
