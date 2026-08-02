@@ -19,11 +19,30 @@
     }
 
     h1 {
-      font-size: 12vw;
-      max-font-size: 4rem;
+      font-size: clamp(2rem, 12vw, 4rem);
       color: black;
       transition: color 0.4s ease;
       margin-bottom: 30px;
+    }
+
+    h1.rainbow {
+      animation: rainbow-shift 3s linear infinite;
+      background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet, red);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    @keyframes rainbow-shift {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
     label {
@@ -44,17 +63,37 @@
 <body>
   <h1 id="greeting">Hello world!</h1>
 
-  <label>
-    <input type="checkbox" id="colorToggle">
-    Turn text blue
-  </label>
+  <div class="controls">
+    <label>
+      <input type="checkbox" id="colorToggle">
+      Turn text blue
+    </label>
+
+    <label>
+      <input type="checkbox" id="rainbowToggle">
+      Rainbow mode
+    </label>
+  </div>
 
   <script>
-    const checkbox = document.getElementById('colorToggle');
     const greeting = document.getElementById('greeting');
+    const colorToggle = document.getElementById('colorToggle');
+    const rainbowToggle = document.getElementById('rainbowToggle');
 
-    checkbox.addEventListener('change', () => {
-      greeting.style.color = checkbox.checked ? 'blue' : 'black';
+    colorToggle.addEventListener('change', () => {
+      if (rainbowToggle.checked) return; // rainbow takes priority
+      greeting.style.color = colorToggle.checked ? 'blue' : 'black';
+    });
+
+    rainbowToggle.addEventListener('change', () => {
+      if (rainbowToggle.checked) {
+        greeting.classList.add('rainbow');
+        greeting.style.color = ''; // let the gradient take over
+      } else {
+        greeting.classList.remove('rainbow');
+        // restore whatever the blue toggle says
+        greeting.style.color = colorToggle.checked ? 'blue' : 'black';
+      }
     });
   </script>
 </body>
