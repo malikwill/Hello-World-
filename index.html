@@ -11,6 +11,10 @@
       font-family: sans-serif;
       overflow: hidden;
       position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
     h1 {
@@ -22,13 +26,7 @@
       color: black;
       transition: color 0.4s ease;
       margin: 0;
-      cursor: grab;
       user-select: none;
-      touch-action: none;
-    }
-
-    h1:active {
-      cursor: grabbing;
     }
 
     h1.rainbow {
@@ -52,16 +50,9 @@
       transform: translateX(-50%);
       display: flex;
       flex-direction: column;
+      align-items: flex-start;
       gap: 16px;
-      opacity: 1;
-      pointer-events: auto;
-      transition: opacity 0.2s ease;
       z-index: 10;
-    }
-
-    .controls.dimmed {
-      opacity: 0.3;
-      pointer-events: none;
     }
 
     label {
@@ -77,12 +68,42 @@
       height: 28px;
       cursor: pointer;
     }
+
+    .gravity-panel {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.05);
+      padding: 12px 16px;
+      border-radius: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .gravity-panel.visible {
+      display: flex;
+    }
+
+    .gravity-panel label {
+      font-size: 1rem;
+      cursor: default;
+    }
+
+    .gravity-panel input[type="number"] {
+      width: 70px;
+      font-size: 1.1rem;
+      padding: 4px 8px;
+    }
+
+    .gravity-panel input[type="range"] {
+      width: 100%;
+    }
   </style>
 </head>
 <body>
   <h1 id="greeting">Hello world!</h1>
 
-  <div class="controls" id="controls">
+  <div class="controls">
     <label>
       <input type="checkbox" id="colorToggle">
       Turn text blue
@@ -92,13 +113,27 @@
       <input type="checkbox" id="rainbowToggle">
       Rainbow mode
     </label>
+
+    <label>
+      <input type="checkbox" id="gravityToggle">
+      Gravity mode
+    </label>
+
+    <div class="gravity-panel" id="gravityPanel">
+      <label for="gravityStrength">Gravity strength (0-100):</label>
+      <input type="range" id="gravityStrength" min="0" max="100" value="50">
+      <input type="number" id="gravityStrengthNumber" min="0" max="100" value="50">
+    </div>
   </div>
 
   <script>
     const greeting = document.getElementById('greeting');
-    const controls = document.getElementById('controls');
     const colorToggle = document.getElementById('colorToggle');
     const rainbowToggle = document.getElementById('rainbowToggle');
+    const gravityToggle = document.getElementById('gravityToggle');
+    const gravityPanel = document.getElementById('gravityPanel');
+    const gravitySlider = document.getElementById('gravityStrength');
+    const gravityNumber = document.getElementById('gravityStrengthNumber');
 
     colorToggle.addEventListener('change', () => {
       if (rainbowToggle.checked) return;
@@ -115,52 +150,73 @@
       }
     });
 
-    // Drag functionality (mouse + touch)
-    let isDragging = false;
-    let offsetX = 0;
-    let offsetY = 0;
+    // Keep slider and number input in sync
+    gravitySlider.addEventListener('input', () => {
+      gravityNumber.value = gravitySlider.value;
+    });
+    gravityNumber.addEventListener('input', () => {
+      let val = Math.min(100, Math.max(0, Number(gravityNumber.value) || 0));
+      gravityNumber.value = val;
+      gravitySlider.value = val;
+    });
 
-    function startDrag(x, y) {
-      isDragging = true;
+    // Physics simulation
+    let velocity = 0;
+    let posY = null;
+    let animationId = null;
+    const bounceDamping = 0.6;
+
+    function startGravity() {
       const rect = greeting.getBoundingClientRect();
-      offsetX = x - rect.left;
-      offsetY = y - rect.top;
-
-      // Set left/top to current visual position BEFORE clearing transform,
-      // so there's no jump when the centering transform is removed
-      greeting.style.left = `${rect.left}px`;
-      greeting.style.top = `${rect.top}px`;
-      greeting.style.transform = 'none';
-
-      controls.classList.add('dimmed');
+      posY = rect.top;
+      greeting.style.top = `${posY}px`;
+      greeting.style.transform = 'translateX(-50%)'; // keep horizontal centering, drop vertical centering
+      velocity = 0;
+      cancelAnimationFrame(animationId);
+      animate();
     }
 
-    function moveDrag(x, y) {
-      if (!isDragging) return;
-      greeting.style.left = `${x - offsetX}px`;
-      greeting.style.top = `${y - offsetY}px`;
+    function stopGravity() {
+      cancelAnimationFrame(animationId);
+      greeting.style.top = '40%';
+      greeting.style.transform = 'translate(-50%, -50%)';
     }
 
-    function endDrag() {
-      isDragging = false;
-      controls.classList.remove('dimmed');
+    function animate() {
+      const strength = Number(gravitySlider.value);
+      const gravityAccel = strength / 100 * 0.6; // tune multiplier for realistic feel
+      const floor = window.innerHeight - greeting.offsetHeight - 10;
+
+      velocity += gravityAccel;
+      posY += velocity;
+
+      if (posY >= floor) {
+        posY = floor;
+        velocity *= -bounceDamping; // bounce back, losing some energy
+        if (Math.abs(velocity) < 0.5) velocity = 0; // settle when bounce is tiny
+      }
+
+      greeting.style.top = `${posY}px`;
+      animationId = requestAnimationFrame(animate);
     }
 
-    // Mouse events
-    greeting.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
-    document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
-    document.addEventListener('mouseup', endDrag);
-
-    // Touch events
-    greeting.addEventListener('touchstart', (e) => {
-      const touch = e.touches[0];
-      startDrag(touch.clientX, touch.clientY);
+    gravityToggle.addEventListener('change', () => {
+      if (gravityToggle.checked) {
+        gravityPanel.classList.add('visible');
+        startGravity();
+      } else {
+        gravityPanel.classList.remove('visible');
+        stopGravity();
+      }
     });
-    document.addEventListener('touchmove', (e) => {
-      const touch = e.touches[0];
-      moveDrag(touch.clientX, touch.clientY);
+
+    // Re-trigger gravity fall if strength changes while active (optional nice touch)
+    gravitySlider.addEventListener('change', () => {
+      if (gravityToggle.checked && velocity === 0 && posY >= window.innerHeight - greeting.offsetHeight - 10) {
+        // give it a little nudge so higher gravity feels responsive even when settled
+        velocity = 1;
+      }
     });
-    document.addEventListener('touchend', endDrag);
   </script>
 </body>
 </html>
