@@ -2,7 +2,44 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hello World</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      font-size: 12vw;
+      max-font-size: 4rem;
+      color: black;
+      transition: color 0.4s ease;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    input[type="checkbox"] {
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
   <h1 id="greeting">Hello world!</h1>
